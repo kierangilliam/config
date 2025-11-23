@@ -10,6 +10,8 @@ alias vim="nvim"
 alias vi="nvim"
 alias v="nvim"
 
+alias gp="git push"
+
 alias grep='grep --color=auto'
 
 alias cd=' cd'

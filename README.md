@@ -4,6 +4,15 @@ Personal configuration files and package install scripts for various profiles (c
 
 ## Install
 
+Prerequisites: `git`, `curl`
+
+```
+apt-get update
+apt-get install -y curl git
+```
+
+Install packages and dotfiles:
+
 ```
 curl https://raw.githubusercontent.com/kierangilliam/config/refs/heads/main/install.sh | sh
 ```
@@ -28,8 +37,12 @@ curl https://raw.githubusercontent.com/kierangilliam/config/refs/heads/main/inst
 
 ```
 docker run --rm -it -v "$PWD":/workspace ubuntu:24.04 bash
+```
 
-# In the container
+In the container:
+
+```
 apt-get update
-apt-get install -y curl
+apt-get install -y curl git
+curl https://raw.githubusercontent.com/kierangilliam/config/refs/heads/main/install.sh | sh
 ```
