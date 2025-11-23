@@ -10,12 +10,15 @@ cat <<'EOF'
   \____\___/|_|  |_|_|  |_|\___/|_| \_|
 EOF
 
-pkg zsh tmux neovim fzf zoxide ripgrep bat
-
-if ! command -v starship &>/dev/null; then
-  curl -sS https://starship.rs/install.sh | sh -s -- -y
+# On macOS (brew), skip zsh (it's pre-installed)
+if [ "$PM" != "brew" ]; then
+  pkg zsh
 fi
 
-git clone https://github.com/zsh-users/zsh-completions.git ~/.zsh/zsh-completions
-git clone https://github.com/Aloxaf/fzf-tab ~/.zsh/fzf-tab
-git clone https://github.com/zsh-users/zsh-autosuggestions ~/.zsh/zsh-autosuggestions
+pkg tmux neovim fzf zoxide ripgrep bat
+
+# On Debian/Ubuntu, bat installs as batcat - create a symlink
+if command -v batcat &>/dev/null && ! command -v bat &>/dev/null; then
+  mkdir -p ~/.local/bin
+  ln -sf "$(which batcat)" ~/.local/bin/bat
+fi

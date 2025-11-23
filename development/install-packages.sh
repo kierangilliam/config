@@ -10,6 +10,8 @@ ____  _______     _______ _     ___  ____  __  __ _____ _   _ _____
 |____/|_____|  \_/  |_____|_____\___/|_|   |_|  |_|_____|_| \_| |_|
 EOF
 
+pkg lazygit lazydocker
+
 # Install Python build dependencies
 # Based on: https://github.com/pyenv/pyenv/wiki#suggested-build-environment
 if [ "$PM" = "apt" ]; then
@@ -22,18 +24,21 @@ elif [ "$PM" = "pacman" ]; then
   pkg base-devel openssl zlib xz tk zstd
 fi
 
-# Install pyenv
-if ! command -v pyenv &>/dev/null; then
+# Only install pyenv and python if neither are found
+if ! command -v pyenv &>/dev/null && ! command -v python3 &>/dev/null; then
+  echo "Neither pyenv nor python found, installing..."
+
+  # Install pyenv
   curl -fsSL https://pyenv.run | bash
-fi
 
-# Initialize pyenv in current shell
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
+  # Initialize pyenv in current shell
+  export PYENV_ROOT="$HOME/.pyenv"
+  export PATH="$PYENV_ROOT/bin:$PATH"
+  eval "$(pyenv init -)"
 
-# Install Python 3.12 if not already installed
-if ! pyenv versions --bare | grep -q "^3.12"; then
+  # Install Python 3.12
   pyenv install 3.12
+  pyenv global 3.12
+else
+  echo "Python or pyenv already installed, skipping installation"
 fi
-pyenv global 3.12

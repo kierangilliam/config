@@ -51,6 +51,11 @@ bash bootstrap.sh
   - `Ctrl+r` search history of shell commands
   - `Ctrl+o` fuzzy change directory
 
+### Development
+
+- `lazygit`
+- `lazydocker`
+
 ## Testing locally
 
 ```
@@ -71,3 +76,7 @@ The following commands should work:
 ```
 zsh
 ```
+
+## Resources
+
+- [Youtube: ZSH Config](https://youtu.be/ud7YxC33Z3w?si=f3GbejZf58TwBYUc)
