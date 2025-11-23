@@ -20,11 +20,7 @@ curl https://raw.githubusercontent.com/kierangilliam/config/refs/heads/main/inst
 ## Profiles
 
 - `common` Configuration and software I want across all machines
-  - Aliases | Packages
-- `app-development` Additional configuration and software I want when doing app development (e.g., Flutter)
-  - Aliases | Packages
 - `ssh-client` Additional configuration and software I want when SSH'ing into a remote server
-  - Aliases | Packages
 
 ## How this works
 
@@ -42,7 +38,8 @@ docker run --rm -it -v "$PWD":/workspace ubuntu:24.04 bash
 In the container:
 
 ```
-apt-get update
-apt-get install -y curl git
-curl https://raw.githubusercontent.com/kierangilliam/config/refs/heads/main/install.sh | sh
+cd /workspace && \
+  apt-get update && \
+  apt-get install -y curl git && \
+  bash bootstrap.sh
 ```

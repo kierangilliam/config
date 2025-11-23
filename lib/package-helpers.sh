@@ -6,12 +6,24 @@
 #   pkg zsh git curl
 #   pkg neovim
 
+# Detect package manager
+if command -v apt-get &>/dev/null; then
+  PM="apt"
+elif command -v brew &>/dev/null; then
+  PM="brew"
+elif command -v pacman &>/dev/null; then
+  PM="pacman"
+else
+  echo "Error: Unsupported package manager" >&2
+  echo "Supported: apt-get, brew, pacman" >&2
+  exit 1
+fi
+
 # Track if apt-get update has been run
 _apt_updated=false
 
 # Helper function to install packages immediately
 # Usage: pkg package1 [package2 ...]
-# Requires PM environment variable to be set (apt/brew/pacman)
 pkg() {
   if [ $# -eq 0 ]; then
     echo "Warning: pkg() called with no arguments" >&2
@@ -22,10 +34,10 @@ pkg() {
     apt)
       # Only run apt-get update once
       if [ "$_apt_updated" = false ]; then
-        sudo apt-get update
+        apt-get update
         _apt_updated=true
       fi
-      sudo apt-get install -y "$@"
+      DEBIAN_FRONTEND=noninteractive apt-get install -y "$@"
       ;;
     brew)
       brew install "$@"

@@ -24,3 +24,4 @@ unset f
 
 # Load machine-local overrides if present
 [ -f "$HOME/.zshrc.local" ] && . "$HOME/.zshrc.local"
+source ~/.autoenv/activate.sh
