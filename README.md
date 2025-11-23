@@ -17,6 +17,14 @@ Install packages and dotfiles:
 curl https://raw.githubusercontent.com/kierangilliam/config/refs/heads/main/install.sh | sh
 ```
 
+Or,
+
+```
+git clone https://github.com/kierangilliam/config ~/personal_config
+cd ~/personal_config
+bash bootstrap.sh
+```
+
 ## Profiles
 
 - `common` Configuration and software I want across all machines
@@ -25,7 +33,7 @@ curl https://raw.githubusercontent.com/kierangilliam/config/refs/heads/main/inst
 ## How this works
 
 - Package manager is detected (`brew`/`packman`/`apt-get`)
-- Profile is selected (`common`/`app-development`/etc)
+- Profile is selected (`common`/`development`/etc)
 - Packages are installed for that profile
 - Per-package configuration files (aka dotfiles) are installed using `stow`
 

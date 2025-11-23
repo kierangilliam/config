@@ -31,3 +31,15 @@ unset f
 
 # Load machine-local overrides if present
 [ -f "$HOME/.zshrc.local" ] && . "$HOME/.zshrc.local"
+
+# Disable sort when completing `git checkout`
+zstyle ':completion:*:git-checkout:*' sort false
+
+# Enables seeing dotfiles when doing something like `zed <TAB>`
+setopt globdots
+
+# Load plugins
+fpath=(~/.zsh-plugins/zsh/src $fpath)
+autoload -U compinit; compinit
+source ~/.zsh/fzf-tab/fzf-tab.plugin.zsh
+source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh

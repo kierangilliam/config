@@ -15,3 +15,7 @@ pkg zsh tmux neovim fzf zoxide ripgrep bat
 if ! command -v starship &>/dev/null; then
   curl -sS https://starship.rs/install.sh | sh -s -- -y
 fi
+
+git clone https://github.com/zsh-users/zsh-completions.git ~/.zsh/zsh-completions
+git clone https://github.com/Aloxaf/fzf-tab ~/.zsh/fzf-tab
+git clone https://github.com/zsh-users/zsh-autosuggestions ~/.zsh/zsh-autosuggestions
