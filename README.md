@@ -39,7 +39,7 @@ bash bootstrap.sh
 
 ## Tools
 
-- `zsh`: Configured with [starship](https://starship.rs/config/).
+- `zsh`: Configured with [p10k](https://github.com/romkatv/powerlevel10k) prompt.
 - `ripgrep`: [Guide](https://github.com/BurntSushi/ripgrep/blob/master/GUIDE.md). A better `grep`. Usage: `rg`.
 - `tmux`
 - `bat`: A better `cat`. Usage: `bat`.
