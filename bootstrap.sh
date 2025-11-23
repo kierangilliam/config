@@ -19,7 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Gives us `pkg` which installs packages using this computer's correct package manager (brew/pacman/apt-get)
 source "$SCRIPT_DIR/lib/package-helpers.sh"
-pkg fzf stow
+pkg stow
 
 # ---------------------------
 # Profile configuration
@@ -61,18 +61,20 @@ for profile in "${ALWAYS_ENABLED[@]}"; do
 done
 echo ""
 
-# Use fzf for multi-select of optional profiles
 selected_profiles=()
 if [ ${#OPTIONAL_PROFILES[@]} -gt 0 ]; then
-  echo "Select additional profiles to enable (use Tab to select/deselect, Enter to confirm):"
-  # Convert array to newline-separated list for fzf
-  mapfile -t selected_profiles < <(
-    printf '%s\n' "${OPTIONAL_PROFILES[@]}" | \
-    fzf --multi \
-        --prompt="Select profiles: " \
-        --header="Use Tab to select multiple, Enter to confirm" \
-        --height=~40%
-  ) || true  # Don't exit if user cancels (Ctrl-C returns non-zero)
+  echo "Select additional profiles to enable:"
+  for profile in "${OPTIONAL_PROFILES[@]}"; do
+    read -p "  Enable '$profile'? (y/N): " response
+    case "$response" in
+      [yY]|[yY][eE][sS])
+        selected_profiles+=("$profile")
+        ;;
+      *)
+        # Default to no for any other input
+        ;;
+    esac
+  done
 fi
 
 # Combine always-enabled + selected profiles

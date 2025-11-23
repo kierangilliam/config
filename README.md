@@ -1,6 +1,6 @@
 # Config
 
-Personal configuration files and package install scripts for various profiles (common, app-development, ssh-client).
+Personal configuration files and package install scripts for various profiles (common, development).
 
 ## Install
 
@@ -20,7 +20,7 @@ curl https://raw.githubusercontent.com/kierangilliam/config/refs/heads/main/inst
 ## Profiles
 
 - `common` Configuration and software I want across all machines
-- `ssh-client` Additional configuration and software I want when SSH'ing into a remote server
+- `development` Additional configuration and software for programming development, like Python
 
 ## How this works
 
@@ -42,4 +42,10 @@ cd /workspace && \
   apt-get update && \
   apt-get install -y curl git && \
   bash bootstrap.sh
+```
+
+The following commands should work:
+
+```
+zsh
 ```
