@@ -25,7 +25,7 @@ pkg fzf stow
 # Profile configuration
 # ---------------------------
 
-OPTIONAL_PROFILES=()
+OPTIONAL_PROFILES=("development")
 ALWAYS_ENABLED=("common")
 
 # ---------------------------
