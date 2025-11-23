@@ -1,0 +1,12 @@
+zsh
+curl
+git
+tmux
+neovim
+# Fuzzy find
+fzf
+# A better `cd`. Usage: `z`
+zoxide
+# A better `grep`. Usage: `rg`
+ripgrep
+starship
