@@ -4,7 +4,9 @@ Personal configuration files and package install scripts for various profiles (c
 
 ## Install
 
-TODO: Install sh command
+```
+curl https://raw.githubusercontent.com/kierangilliam/config/refs/heads/main/install.sh | sh
+```
 
 ## Profiles
 
