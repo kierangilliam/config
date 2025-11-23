@@ -11,6 +11,18 @@ if command -v apt-get &>/dev/null; then
   PM="apt"
 elif command -v brew &>/dev/null; then
   PM="brew"
+  # On macOS, check if we're running under Rosetta 2 on an ARM Mac
+  if [ "$(uname -s)" = "Darwin" ]; then
+    # Check if we're running under Rosetta 2
+    if [ "$(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0)" = "1" ]; then
+      # Running under Rosetta 2, force brew to run under arm64
+      BREW_CMD="arch -arm64 brew"
+    else
+      BREW_CMD="brew"
+    fi
+  else
+    BREW_CMD="brew"
+  fi
 elif command -v pacman &>/dev/null; then
   PM="pacman"
 else
@@ -40,7 +52,7 @@ pkg() {
       DEBIAN_FRONTEND=noninteractive apt-get install -y "$@"
       ;;
     brew)
-      brew install "$@"
+      $BREW_CMD install "$@"
       ;;
     pacman)
       sudo pacman -S --noconfirm --needed "$@"
