@@ -23,7 +23,9 @@ elif [ "$PM" = "pacman" ]; then
 fi
 
 # Install pyenv
-curl -fsSL https://pyenv.run | bash
+if ! command -v pyenv &>/dev/null; then
+  curl -fsSL https://pyenv.run | bash
+fi
 
 # Initialize pyenv in current shell
 export PYENV_ROOT="$HOME/.pyenv"

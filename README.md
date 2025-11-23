@@ -29,6 +29,20 @@ curl https://raw.githubusercontent.com/kierangilliam/config/refs/heads/main/inst
 - Packages are installed for that profile
 - Per-package configuration files (aka dotfiles) are installed using `stow`
 
+## Tools
+
+- `zsh`: Configured with [starship](https://starship.rs/config/).
+- `ripgrep`: [Guide](https://github.com/BurntSushi/ripgrep/blob/master/GUIDE.md). A better `grep`. Usage: `rg`.
+- `tmux`
+- `bat`: A better `cat`. Usage: `bat`.
+- `zoxide`: A better `cd`. Usage: `z`.
+- `fd`: A better `find`. Usage: `fd`.
+- `fzf`: Fuzzy finding tool
+  - `fzf --preview="bat --color=always {}"`: Search directories with fzf
+  - `Ctrl+t` list files+folders in current directory (e.g., type git add , press Ctrl+t, select a few files using Tab, finally Enter)
+  - `Ctrl+r` search history of shell commands
+  - `Ctrl+o` fuzzy change directory
+
 ## Testing locally
 
 ```

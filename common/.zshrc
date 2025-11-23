@@ -8,11 +8,18 @@ HISTSIZE=10000 # Sets how many commands zsh keeps in memory during the current s
 SAVEHIST=50000 # Sets how many commands are saved to the history file (HISTFILE).
 setopt inc_append_history # Makes zsh append each command to the history file immediately when executed, instead of waiting until the shell exits.
 
-bindkey '^r' history-incremental-search-backward
-
 # Set up fzf key bindings and fuzzy completion
 # https://github.com/junegunn/fzf?tab=readme-ov-file#setting-up-shell-integration
 source <(fzf --zsh)
+# https://github.com/junegunn/fzf/wiki/Configuring-shell-key-bindings
+fzf-history-widget-accept() {
+  fzf-history-widget
+  zle accept-line
+}
+zle     -N     fzf-history-widget-accept
+bindkey '^r' fzf-history-widget-accept
+bindkey '^O' fzf-cd-widget
+bindkey '^T' fzf-file-widget
 
 export PATH="$HOME/.local/bin:$PATH"
 
