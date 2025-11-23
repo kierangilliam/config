@@ -99,11 +99,9 @@ done
 # ----- Stow dotfiles -----
 
 echo "Stowing dotfiles..."
-for profile in "${all_profiles[@]}"; do
-  echo "  stow $profile"
-  cd "$SCRIPT_DIR"
-  stow -t "$HOME" "$profile"
-done
+cd "$SCRIPT_DIR"
+echo "  stow ${all_profiles[*]}"
+stow -t "$HOME" --ignore='install-packages.sh' "${all_profiles[@]}"
 
 echo ""
 echo "Bootstrap complete!"
