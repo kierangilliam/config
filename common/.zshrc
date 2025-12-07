@@ -36,7 +36,9 @@ autoload -Uz compinit && compinit
 
 zinit cdreplay -q
 
-eval "$(zoxide init --cmd cd zsh)"
+if [[ "$CLAUDECODE" != "1" ]]; then
+    eval "$(zoxide init --cmd cd zsh)"
+fi
 
 export EDITOR="nvim"
 export SUDO_EDITOR="$EDITOR"

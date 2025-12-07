@@ -14,12 +14,6 @@ apt-get install -y curl git
 Install packages and dotfiles:
 
 ```
-curl https://raw.githubusercontent.com/kierangilliam/config/refs/heads/main/install.sh | sh
-```
-
-Or,
-
-```
 git clone https://github.com/kierangilliam/config ~/personal_config
 cd ~/personal_config
 bash bootstrap.sh
@@ -43,8 +37,7 @@ bash bootstrap.sh
 - `ripgrep`: [Guide](https://github.com/BurntSushi/ripgrep/blob/master/GUIDE.md). A better `grep`. Usage: `rg`.
 - `tmux`
 - `bat`: A better `cat`. Usage: `bat`.
-- `zoxide`: A better `cd`. Usage: `z`.
-- `fd`: A better `find`. Usage: `fd`.
+- `zoxide`: A better `cd`. Usage: `z`. Replaces `cd`.
 - `fzf`: Fuzzy finding tool
   - `fzf --preview="bat --color=always {}"`: Search directories with fzf
   - `Ctrl+t` list files+folders in current directory (e.g., type git add , press Ctrl+t, select a few files using Tab, finally Enter)
