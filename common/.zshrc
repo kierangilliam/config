@@ -36,6 +36,7 @@ autoload -Uz compinit && compinit
 
 zinit cdreplay -q
 
+export CLAUDE_CODE_DISABLE_AUTO_MEMORY=1
 if [[ "$CLAUDECODE" != "1" ]]; then
     eval "$(zoxide init --cmd cd zsh)"
 fi

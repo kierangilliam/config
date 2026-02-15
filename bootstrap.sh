@@ -25,7 +25,7 @@ pkg stow
 # Profile configuration
 # ---------------------------
 
-OPTIONAL_PROFILES=("development")
+OPTIONAL_PROFILES=("development", "remove_development")
 ALWAYS_ENABLED=("common")
 
 # ---------------------------
