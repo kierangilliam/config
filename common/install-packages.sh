@@ -15,7 +15,7 @@ if [ "$PM" != "brew" ]; then
   pkg zsh
 fi
 
-pkg neovim fzf zoxide ripgrep bat
+pkg tmux neovim fzf zoxide ripgrep bat
 
 # On Debian/Ubuntu, bat installs as batcat - create a symlink
 if command -v batcat &>/dev/null && ! command -v bat &>/dev/null; then
