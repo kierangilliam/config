@@ -25,7 +25,7 @@ pkg stow
 # Profile configuration
 # ---------------------------
 
-OPTIONAL_PROFILES=("development", "remove_development")
+OPTIONAL_PROFILES=("development" "remote_development")
 ALWAYS_ENABLED=("common")
 
 # ---------------------------
@@ -67,12 +67,12 @@ if [ ${#OPTIONAL_PROFILES[@]} -gt 0 ]; then
   for profile in "${OPTIONAL_PROFILES[@]}"; do
     read -p "  Enable '$profile'? (y/N): " response
     case "$response" in
-      [yY]|[yY][eE][sS])
-        selected_profiles+=("$profile")
-        ;;
-      *)
-        # Default to no for any other input
-        ;;
+    [yY] | [yY][eE][sS])
+      selected_profiles+=("$profile")
+      ;;
+    *)
+      # Default to no for any other input
+      ;;
     esac
   done
 fi
