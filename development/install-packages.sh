@@ -10,7 +10,25 @@ ____  _______     _______ _     ___  ____  __  __ _____ _   _ _____
 |____/|_____|  \_/  |_____|_____\___/|_|   |_|  |_|_____|_| \_| |_|
 EOF
 
-pkg lazygit lazydocker
+# lazygit and lazydocker aren't in standard apt repos (until Ubuntu 25.10+)
+if [ "$PM" = "apt" ]; then
+  # lazygit - https://github.com/jesseduffield/lazygit#debian-and-ubuntu
+  if ! command -v lazygit &>/dev/null; then
+    LAZYGIT_VERSION=$(curl -fs "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*')
+    curl -Lo /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+    tar xf /tmp/lazygit.tar.gz -C /tmp lazygit
+    sudo install /tmp/lazygit -D -t /usr/local/bin/
+    rm /tmp/lazygit /tmp/lazygit.tar.gz
+  fi
+  # lazydocker - https://github.com/jesseduffield/lazydocker#binary-release-linuxmacos
+  if ! command -v lazydocker &>/dev/null; then
+    curl -fsSL https://raw.githubusercontent.com/jesseduffield/lazydocker/master/scripts/install_update_linux.sh | bash
+  fi
+elif [ "$PM" = "brew" ]; then
+  pkg lazygit lazydocker
+elif [ "$PM" = "pacman" ]; then
+  pkg lazygit lazydocker
+fi
 
 # Install Python build dependencies
 # Based on: https://github.com/pyenv/pyenv/wiki#suggested-build-environment

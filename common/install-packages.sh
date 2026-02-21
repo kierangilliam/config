@@ -15,7 +15,13 @@ if [ "$PM" != "brew" ]; then
   pkg zsh
 fi
 
-pkg tmux neovim fzf zoxide ripgrep bat
+pkg tmux neovim zoxide ripgrep bat
+
+# Install fzf from git to get latest version (apt version is too old for --zsh flag)
+if [ ! -d "$HOME/.fzf" ]; then
+  git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME/.fzf"
+  "$HOME/.fzf/install" --key-bindings --completion --no-update-rc --no-bash --no-fish
+fi
 
 # On Debian/Ubuntu, bat installs as batcat - create a symlink
 if command -v batcat &>/dev/null && ! command -v bat &>/dev/null; then

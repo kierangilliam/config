@@ -59,6 +59,7 @@ setopt hist_find_no_dups
 
 # Set up fzf key bindings and fuzzy completion
 # https://github.com/junegunn/fzf?tab=readme-ov-file#setting-up-shell-integration
+[[ -f "$HOME/.fzf/bin/fzf" ]] && export PATH="$HOME/.fzf/bin:$PATH"
 source <(fzf --zsh)
 # https://github.com/junegunn/fzf/wiki/Configuring-shell-key-bindings
 fzf-history-widget-accept() {
