@@ -15,7 +15,25 @@ if [ "$PM" != "brew" ]; then
   pkg zsh
 fi
 
-pkg tmux neovim zoxide ripgrep bat
+pkg tmux neovim ripgrep bat
+
+# Install zoxide - brew version is fine, apt version is too old (missing builtin cd fix)
+if [ "$PM" = "brew" ]; then
+  pkg zoxide
+else
+  ZOXIDE_VERSION="0.9.9"
+  if ! command -v zoxide &>/dev/null || [[ "$(zoxide --version)" != "zoxide $ZOXIDE_VERSION" ]]; then
+    ARCH="$(uname -m)"
+    case "$ARCH" in
+      x86_64)  ZOXIDE_ARCH="x86_64-unknown-linux-musl" ;;
+      aarch64) ZOXIDE_ARCH="aarch64-unknown-linux-musl" ;;
+      *)       echo "Unsupported architecture: $ARCH" >&2; exit 1 ;;
+    esac
+    mkdir -p ~/.local/bin
+    curl -sSfL "https://github.com/ajeetdsouza/zoxide/releases/download/v${ZOXIDE_VERSION}/zoxide-${ZOXIDE_VERSION}-${ZOXIDE_ARCH}.tar.gz" \
+      | tar -xz -C ~/.local/bin zoxide
+  fi
+fi
 
 # Install fzf from git to get latest version (apt version is too old for --zsh flag)
 if [ ! -d "$HOME/.fzf" ]; then

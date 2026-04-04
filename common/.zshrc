@@ -38,6 +38,8 @@ zinit cdreplay -q
 
 export CLAUDE_CODE_DISABLE_AUTO_MEMORY=1
 if [[ "$CLAUDECODE" != "1" ]]; then
+    unfunction cd 2>/dev/null
+    unalias cd 2>/dev/null
     eval "$(zoxide init --cmd cd zsh)"
 fi
 
@@ -95,3 +97,9 @@ unset f
 
 # Load machine-local overrides if present
 [ -f "$HOME/.zshrc.local" ] && . "$HOME/.zshrc.local"
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/home/node/google-cloud-sdk/path.zsh.inc' ]; then . '/home/node/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/home/node/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/node/google-cloud-sdk/completion.zsh.inc'; fi

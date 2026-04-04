@@ -14,7 +14,6 @@ alias gp="git push"
 
 alias grep='grep --color=auto'
 
-alias cd=' cd'
 alias ..=' cd ..; ls'
 alias ...=' cd ..; cd ..; ls'
 alias ....=' cd ..; cd ..; cd ..; ls'
