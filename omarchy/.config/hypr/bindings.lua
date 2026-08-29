@@ -221,3 +221,11 @@ o.bind(
   "Close tab (Chrome) / close window",
   in_chrome(send_shortcut_once("CTRL", "W"), hl.dsp.window.close())
 )
+
+-- SUPER + R is unbound by default, so it only needs to do anything in Chrome:
+-- macOS Command+R reload. Outside Chrome it is a deliberate no-op.
+o.bind(
+  "SUPER + R",
+  "Reload page (Chrome)",
+  in_chrome(send_shortcut_once("CTRL", "R"), hl.dsp.exec_cmd("true"))
+)
