@@ -59,13 +59,34 @@
 -- hl.gesture({ fingers = 3, direction = "left", action = function() hl.dispatch(hl.dsp.focus({ direction = "l" })) end })
 -- hl.gesture({ fingers = 3, direction = "right", action = function() hl.dispatch(hl.dsp.focus({ direction = "r" })) end })
 
--- Faster touchpad scrolling in agent windows (Claude Code etc.).
--- Omarchy boosts (Alacritty|kitty|foot) by 1.5, but omarchy-agent launches foot
--- under the app-id org.omarchy.agent, so that rule never matched these windows.
-o.window("org.omarchy.agent", { scroll_touchpad = 1.5 })
+-- Touchpad scroll speed.
+--
+-- Omarchy's default scroll_factor (0.4) makes the omarchy-shell menu and panels
+-- feel sluggish. Those are layer surfaces, which per-window scroll_touchpad
+-- rules can't target, so the only way to speed them up is the global factor.
+-- Raise it to 1.0, then use a catch-all window rule to bring every regular
+-- window back to the old 0.4, and re-declare the app-specific rules scaled
+-- by 0.4 so they end up at the same effective speed as before.
+--
+-- Effective speed = scroll_factor * scroll_touchpad. Rules are applied in
+-- order and the last match wins, so the catch-all must come first.
+hl.config({
+  input = {
+    touchpad = {
+      scroll_factor = 1.0,
+    },
+  },
+})
+o.window(".*", { scroll_touchpad = 0.4 })                    -- was 0.4
+o.window("(Alacritty|kitty|foot)", { scroll_touchpad = 0.6 }) -- was 0.4*1.5
+o.window("com.mitchellh.ghostty", { scroll_touchpad = 0.08 }) -- was 0.4*0.2
 
--- Slower touchpad scrolling in Chrome only (1.0 = normal, lower = slower).
-o.window("google-chrome", { scroll_touchpad = 0.25 })
+-- Agent windows (Claude Code etc.). omarchy-agent launches foot under the
+-- app-id org.omarchy.agent, so the terminal rule above never matches them.
+o.window("org.omarchy.agent", { scroll_touchpad = 1.0 })
+
+-- Slower touchpad scrolling in Chrome only (was 0.4*0.25).
+o.window("google-chrome", { scroll_touchpad = 0.1 })
 
 -- Caps Lock acts as Escape.
 -- Replaces Omarchy's default "compose:caps" (Caps Lock as the compose key).
