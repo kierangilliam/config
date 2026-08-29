@@ -24,3 +24,7 @@ alias dcd='docker compose down'
 alias dcr='docker compose run'
 alias dcb='docker compose build'
 
+alias cgit='cd ~/Documents/git'
+
+# Docker Sandboxes: HERDR_AGENT lets herdr detect claude behind the sbx wrapper
+alias sbxc='HERDR_AGENT=claude sbx run claude'

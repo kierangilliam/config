@@ -229,3 +229,15 @@ o.bind(
   "Reload page (Chrome)",
   in_chrome(send_shortcut_once("CTRL", "R"), hl.dsp.exec_cmd("true"))
 )
+
+-- ===========================================================================
+-- macOS-style screenshot to clipboard
+-- ===========================================================================
+-- Command+Ctrl+Shift+4 on macOS: pick a region, copy it to the clipboard only
+-- (no file written). The default SUPER + F11 region binding still saves a file.
+-- The stock "copy" mode is silent, so notify on success for feedback.
+o.bind(
+  "SUPER + SHIFT + CTRL + 4",
+  "Screenshot region to clipboard",
+  "omarchy-capture-screenshot region copy && omarchy-notification-send 'Screenshot copied to clipboard' -t 2000"
+)

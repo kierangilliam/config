@@ -60,3 +60,15 @@ if ! command -v pyenv &>/dev/null && ! command -v python3 &>/dev/null; then
 else
   echo "Python or pyenv already installed, skipping installation"
 fi
+
+# Install uv - https://docs.astral.sh/uv/getting-started/installation/
+if ! command -v uv &>/dev/null; then
+  echo "uv not found, installing..."
+  if [ "$PM" = "brew" ] || [ "$PM" = "pacman" ]; then
+    pkg uv
+  else
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+  fi
+else
+  echo "uv already installed, skipping installation"
+fi
