@@ -48,3 +48,26 @@
 --     column_width = 0.97,
 --   },
 -- })
+
+-- macOS-style corners (trial)
+hl.config({
+  decoration = {
+    rounding = 12,
+    rounding_power = 4.0,
+
+    shadow = {
+      enabled = true,
+      range = 24,
+      render_power = 3,
+      color = "rgba(00000055)",
+    },
+  },
+})
+
+-- Extra breathing room between the bar and the top of windows.
+-- gaps_out order: top, right, bottom, left
+hl.config({
+  general = {
+    gaps_out = { top = 20, right = 10, bottom = 10, left = 10 },
+  },
+})

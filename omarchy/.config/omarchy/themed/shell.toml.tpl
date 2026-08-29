@@ -13,7 +13,7 @@ active           = "{{ red }}"
 # top/bottom bars; size-vertical is the width of left/right bars. With
 # scale-with-font enabled, these grow/shrink with [font] base-size.
 scale-with-font  = true
-size-horizontal  = 26
+size-horizontal  = 34
 size-vertical    = 28
 
 [hyprland]
