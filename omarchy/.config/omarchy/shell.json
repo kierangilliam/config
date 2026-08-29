@@ -29,6 +29,9 @@
           "id": "omarchy.indicators"
         },
         {
+          "id": "kierangill.istat"
+        },
+        {
           "id": "omarchy.clock",
           "format": "dddd HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",
@@ -64,5 +67,8 @@
       ]
     }
   },
-  "plugins": []
+  "plugins": [],
+  "disabledPlugins": [
+    "omarchy.flush-bar"
+  ]
 }

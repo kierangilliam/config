@@ -68,6 +68,6 @@ hl.config({
 -- gaps_out order: top, right, bottom, left
 hl.config({
   general = {
-    gaps_out = { top = 20, right = 10, bottom = 10, left = 10 },
+    gaps_out = { top = 10, right = 10, bottom = 10, left = 10 },
   },
 })
