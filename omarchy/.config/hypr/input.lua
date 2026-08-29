@@ -58,3 +58,30 @@
 -- Enable touchpad gestures for moving focus (helpful on scrolling layout).
 -- hl.gesture({ fingers = 3, direction = "left", action = function() hl.dispatch(hl.dsp.focus({ direction = "l" })) end })
 -- hl.gesture({ fingers = 3, direction = "right", action = function() hl.dispatch(hl.dsp.focus({ direction = "r" })) end })
+
+-- Faster touchpad scrolling in agent windows (Claude Code etc.).
+-- Omarchy boosts (Alacritty|kitty|foot) by 1.5, but omarchy-agent launches foot
+-- under the app-id org.omarchy.agent, so that rule never matched these windows.
+o.window("org.omarchy.agent", { scroll_touchpad = 1.5 })
+
+-- Slower touchpad scrolling in Chrome only (1.0 = normal, lower = slower).
+o.window("google-chrome", { scroll_touchpad = 0.25 })
+
+-- Caps Lock acts as Escape.
+-- Replaces Omarchy's default "compose:caps" (Caps Lock as the compose key).
+-- Both Shifts together still toggles actual Caps Lock, cleared by a lone Shift.
+hl.config({
+  input = {
+    kb_options = "caps:escape,shift:both_capslock_cancel",
+  },
+})
+
+-- Three-finger drag: press three fingers and move to left-click-and-drag.
+-- Lets you select text (and drag windows/files) without holding a click.
+hl.config({
+  input = {
+    touchpad = {
+      drag_3fg = 1,
+    },
+  },
+})
