@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "kierangill.istat-memory",
+  "name": "iStat Memory",
+  "version": "3.0.0",
+  "author": "Kieran Gill",
+  "description": "iStat Menus-style memory usage bar with a drop-down breakdown, pressure graph, and top processes",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" },
+  "barWidget": {
+    "displayName": "iStat Memory",
+    "description": "Memory usage bar + percentage; click for app/wired/compressed/cached breakdown, swap, pressure, and top processes",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": { "interval": 2000, "showText": true, "topProcs": 5 },
+    "schema": [
+      { "key": "interval", "type": "number", "label": "Refresh interval (ms)" },
+      { "key": "showText", "type": "boolean", "label": "Show percentage" },
+      { "key": "topProcs", "type": "number", "label": "Processes to list" }
+    ]
+  }
+}

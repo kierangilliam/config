@@ -1,13 +1,14 @@
 .pragma library
 
-// Parsing, deltas, formatting, and canvas painters for the iStat panel.
-// Ported from istat-mon's sysinfo.py / graphs.py.
+// Parsing, deltas, formatting, and canvas painters shared by the iStat
+// CPU / Memory / Network widgets. Ported from istat-mon's sysinfo.py / graphs.py.
 
 var HISTORY = 90
 
 // ------------------------------------------------------------ snapshot
 function parseSnapshot(text) {
-  var snap = { clk: 100, page: 4096, stat: {}, mem: {}, load: [0, 0, 0], uptime: 0, zram: 0, psi: 0, procs: [] }
+  var snap = { clk: 100, page: 4096, stat: {}, mem: {}, load: [0, 0, 0], uptime: 0, zram: 0, psi: 0, procs: [],
+               net: {}, addr: {}, route: { iface: "", gateway: "" }, wifi: {} }
   var section = ""
   var lines = String(text || "").split("\n")
   for (var i = 0; i < lines.length; i++) {
@@ -47,6 +48,18 @@ function parseSnapshot(text) {
         if (parts.length >= 5)
           snap.procs.push({ pid: Number(parts[0]), start: Number(parts[1]), ticks: Number(parts[2]),
                             rss: Number(parts[3]), name: parts.slice(4).join(" ") })
+        break
+      case "net":
+        if (parts.length >= 3) snap.net[parts[0]] = { rx: Number(parts[1]) || 0, tx: Number(parts[2]) || 0 }
+        break
+      case "addr":
+        if (parts.length >= 2) snap.addr[parts[0]] = parts[1]
+        break
+      case "route":
+        snap.route = { iface: parts[0] || "", gateway: parts[1] || "" }
+        break
+      case "wifi":
+        if (parts.length >= 2) snap.wifi[parts[0]] = parts.slice(1).join(" ")
         break
     }
   }
@@ -134,6 +147,44 @@ function hueFor(name) {
   return (h % 1000) / 1000
 }
 
+// ------------------------------------------------------------- Network
+// Pick the interface to report: the configured one if it exists, else the
+// default route's, else the first non-loopback interface with traffic.
+function pickIface(snap, wanted) {
+  if (wanted && snap.net[wanted]) return wanted
+  if (snap.route.iface && snap.net[snap.route.iface]) return snap.route.iface
+  var best = "", bestBytes = -1
+  for (var k in snap.net) {
+    if (k === "lo") continue
+    var b = snap.net[k].rx + snap.net[k].tx
+    if (b > bestBytes) { best = k; bestBytes = b }
+  }
+  return best
+}
+
+// Bytes/sec for one interface between two snapshots; 0 on a counter reset.
+function netDelta(prevSnap, curSnap, iface, dtSec) {
+  var a = prevSnap && prevSnap.net[iface], b = curSnap.net[iface]
+  if (!a || !b || dtSec <= 0) return { up: 0, down: 0 }
+  return { up: Math.max(0, (b.tx - a.tx) / dtSec), down: Math.max(0, (b.rx - a.rx) / dtSec) }
+}
+
+// [{ name, ip, ssid, rx, tx }] for every interface except loopback,
+// primary first, then the rest alphabetically.
+function ifaceList(snap, primary) {
+  var out = []
+  for (var k in snap.net) {
+    if (k === "lo") continue
+    out.push({ name: k, ip: snap.addr[k] || "", ssid: snap.wifi[k] || "", rx: snap.net[k].rx, tx: snap.net[k].tx })
+  }
+  out.sort(function(x, y) {
+    if (x.name === primary) return -1
+    if (y.name === primary) return 1
+    return x.name < y.name ? -1 : x.name > y.name ? 1 : 0
+  })
+  return out
+}
+
 // ------------------------------------------------------------ Formatting
 function fmtBytes(n, decimals) {
   if (decimals === undefined) decimals = 1
@@ -143,6 +194,20 @@ function fmtBytes(n, decimals) {
   while (n >= 1000 && i < units.length - 1) { n /= 1000; i++ }
   if (i === 0) return Math.round(n) + " B"
   return n.toFixed(n < 100 ? decimals : 0) + " " + units[i]
+}
+
+// Throughput. `compact` keeps the bar label short and stable: at most three
+// significant digits ("0 B/s", "12.3 KB/s", "980 KB/s", "1.2 MB/s").
+function fmtRate(bytesPerSec, compact) {
+  var n = Number(bytesPerSec) || 0
+  var units = ["B/s", "KB/s", "MB/s", "GB/s"]
+  var i = 0
+  while (n >= 1000 && i < units.length - 1) { n /= 1000; i++ }
+  var s
+  if (i === 0) s = String(Math.round(n))
+  else if (compact) s = n < 10 ? n.toFixed(1) : String(Math.round(n))
+  else s = n.toFixed(n < 100 ? 1 : 0)
+  return s + " " + units[i]
 }
 
 function fmtUptime(sec) {
@@ -232,6 +297,50 @@ function paintHistory(ctx, w, h, series, maxlen, fg) {
     }
   }
   ctx.restore()
+}
+
+// Overlapping (not stacked) area lines auto-scaled to the largest sample in
+// view; series is [{data: [...values], color}], newest sample last. Used for
+// network throughput where the two directions share one graph.
+function paintLines(ctx, w, h, series, maxlen, fg) {
+  ctx.clearRect(0, 0, w, h)
+  ctx.save()
+  rrect(ctx, 0, 0, w, h, 6)
+  ctx.fillStyle = rgba(fg, 0.05)
+  ctx.fill()
+  ctx.clip()
+  ctx.strokeStyle = rgba(fg, 0.07)
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  var fr = [0.25, 0.5, 0.75]
+  for (var k = 0; k < fr.length; k++) { var y = Math.round(h * fr[k]) + 0.5; ctx.moveTo(0, y); ctx.lineTo(w, y) }
+  ctx.stroke()
+  var peak = 1
+  for (var s = 0; s < series.length; s++)
+    for (var i = 0; i < series[s].data.length; i++) peak = Math.max(peak, series[s].data[i])
+  for (s = 0; s < series.length; s++) {
+    var vals = series[s].data, color = series[s].color, n = vals.length
+    if (n < 2) continue
+    var step = w / Math.max(1, maxlen - 1)
+    var x0 = w - (n - 1) * step
+    function yAt(v) { return h - (h - 2) * Math.min(1, v / peak) }
+    ctx.beginPath()
+    ctx.moveTo(x0, h)
+    for (i = 0; i < n; i++) ctx.lineTo(x0 + i * step, yAt(vals[i]))
+    ctx.lineTo(x0 + (n - 1) * step, h)
+    ctx.closePath()
+    ctx.fillStyle = rgba(color, 0.25)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.moveTo(x0, yAt(vals[0]))
+    for (i = 1; i < n; i++) ctx.lineTo(x0 + i * step, yAt(vals[i]))
+    ctx.strokeStyle = rgba(color, 1)
+    ctx.lineWidth = 1.5
+    ctx.lineJoin = "round"
+    ctx.stroke()
+  }
+  ctx.restore()
+  return peak
 }
 
 // Vertical per-core bars.

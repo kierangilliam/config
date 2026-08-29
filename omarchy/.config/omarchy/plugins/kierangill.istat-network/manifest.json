@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "kierangill.istat-network",
+  "name": "iStat Network",
+  "version": "3.0.0",
+  "author": "Kieran Gill",
+  "description": "iStat Menus-style network widget: live upload/download rates in the bar with a drop-down throughput graph, totals, and interfaces",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" },
+  "barWidget": {
+    "displayName": "iStat Network",
+    "description": "Stacked ↑ upload / ↓ download rates; click for throughput history, totals, and per-interface addresses",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": { "interval": 1000, "interface": "" },
+    "schema": [
+      { "key": "interval", "type": "number", "label": "Refresh interval (ms)" },
+      { "key": "interface", "type": "string", "label": "Interface (blank = default route)" }
+    ]
+  }
+}

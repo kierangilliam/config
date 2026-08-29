@@ -1,0 +1,3 @@
+import qs.Ui
+
+PanelSeparator {}
