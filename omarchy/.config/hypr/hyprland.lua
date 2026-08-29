@@ -10,6 +10,10 @@ dofile((os.getenv("OMARCHY_PATH") or "/usr/share/omarchy") .. "/default/hypr/boo
 -- keeping core window-manager bindings:
 -- omarchy_preinstalled_bindings = false
 
+-- Record keybinds as they are registered so hypr/bindings.lua can override
+-- Omarchy defaults per app without restating them. Must precede the defaults.
+require("hypr.keybind-registry")
+
 -- Load Omarchy defaults.
 require("default.hypr.omarchy")
 

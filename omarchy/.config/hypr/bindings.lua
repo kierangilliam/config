@@ -32,6 +32,18 @@
 hl.unbind("SUPER + SHIFT + A")
 o.bind("SUPER + SHIFT + A", "Agent", "omarchy-agent --pick")
 
+-- Webapps I don't use. Freeing SUPER+SHIFT+E also lets it reach apps (VS Code
+-- maps it to Focus Explorer, like CTRL+SHIFT+E).
+hl.unbind("SUPER + SHIFT + E") -- HEY Email
+hl.unbind("SUPER + SHIFT + ALT + E") -- HEY New email
+hl.unbind("SUPER + SHIFT + C") -- HEY Calendar
+hl.unbind("SUPER + SHIFT + X") -- X
+hl.unbind("SUPER + SHIFT + ALT + X") -- X Post
+hl.unbind("SUPER + SHIFT + ALT + G") -- WhatsApp
+hl.unbind("SUPER + SHIFT + CTRL + G") -- Google Messages
+hl.unbind("SUPER + SHIFT + P") -- Google Photos
+hl.unbind("SUPER + SHIFT + S") -- Google Maps
+
 -- ===========================================================================
 -- macOS-style text navigation on the Command (SUPER) key
 -- ===========================================================================
@@ -76,14 +88,9 @@ local function send_shortcut_sequence(chords)
   end
 end
 
--- Does the focused window carry an Omarchy window tag? Dynamic tags carry a
--- trailing "*", so strip it before comparing.
-local function active_window_has_tag(name)
-  local window = hl.get_active_window()
-  if not window then
-    return false
-  end
-
+-- Does a window carry an Omarchy window tag? Dynamic tags carry a trailing
+-- "*", so strip it before comparing.
+local function window_has_tag(window, name)
   for _, tag in ipairs(window.tags or {}) do
     if tag:gsub("%*$", "") == name then
       return true
@@ -91,6 +98,11 @@ local function active_window_has_tag(name)
   end
 
   return false
+end
+
+local function active_window_has_tag(name)
+  local window = hl.get_active_window()
+  return window ~= nil and window_has_tag(window, name)
 end
 
 -- --- Rehome the window-management bindings that sit on the arrows ----------
@@ -188,47 +200,95 @@ o.bind("SUPER + BACKSPACE", "Delete to start of line", function()
 end)
 
 -- ===========================================================================
--- macOS-style tab management in Chrome
+-- macOS-style Command shortcuts forwarded to specific apps
 -- ===========================================================================
--- SUPER + T and SUPER + W keep their Omarchy meanings everywhere except a real
--- Chrome window, where they become new tab / close tab. The browser test
--- reuses the "chromium-based-browser" tag from default/hypr/apps/browser.lua,
--- so there is one definition of what counts as a Chrome-family browser.
+-- forward_in_app(apps, chord): while one of the listed apps is focused, the
+-- chord is sent to the window with SUPER swapped for CTRL (Command+W becomes
+-- Ctrl+W), so it behaves as it does on macOS. Everywhere else the chord keeps
+-- its Omarchy default untouched.
 --
--- Webapp windows (chrome-<site>__-Default) do not carry that tag, and that is
--- the behaviour we want: they have no tab bar, so SUPER + W should close them
--- outright. SUPER + Q still closes a whole Chrome window, tabs and all.
-local function in_chrome(chrome_action, default_action)
-  return function()
-    if active_window_has_tag("chromium-based-browser") then
-      chrome_action()
-    else
-      hl.dispatch(default_action)
+-- Nothing about the default is restated here: hypr/keybind-registry.lua hands
+-- back the keybind object Omarchy registered for the chord, and on every focus
+-- change the default and the forwarding keybind are toggled against each
+-- other with keybind:set_enabled. Chords with no default are simply no-ops
+-- outside the listed apps.
+--
+-- Apps are matched by window class (exact) or by an Omarchy window tag. The
+-- "chromium-based-browser" tag comes from default/hypr/apps/browser.lua, so
+-- there is one definition of what counts as a Chrome-family browser. Webapp
+-- windows (chrome-<site>__-Default) do not carry that tag, and that is the
+-- behaviour we want: they have no tab bar, so SUPER + W closes them outright.
+local vscode = { class = "code" }
+local chrome = { tag = "chromium-based-browser" }
+
+local function window_matches_any(window, apps)
+  for _, app in ipairs(apps) do
+    if app.tag and window_has_tag(window, app.tag) then
+      return true
+    end
+    if app.class and window.class == app.class then
+      return true
+    end
+  end
+
+  return false
+end
+
+local forwards = {}
+
+local function forward_in_app(apps, chord)
+  local tokens = {}
+  for token in chord:upper():gmatch("[^%s+]+") do
+    table.insert(tokens, token)
+  end
+  local key = table.remove(tokens)
+  for index, token in ipairs(tokens) do
+    if token == "SUPER" then
+      tokens[index] = "CTRL"
+    end
+  end
+  local mods = table.concat(tokens, " ")
+
+  local names = {}
+  for _, app in ipairs(apps) do
+    table.insert(names, app.class or app.tag)
+  end
+
+  -- Look up the default before binding: the forwarding keybind takes over the
+  -- chord's registry slot.
+  local default = hl.find_keybind(chord)
+  local forward = hl.bind(chord, send_shortcut_once(mods, key), {
+    description = mods:gsub(" ", "+") .. "+" .. key .. " (" .. table.concat(names, ", ") .. ")",
+  })
+  forward:set_enabled(false)
+
+  table.insert(forwards, { apps = apps, default = default, forward = forward })
+end
+
+local function refresh_forwards()
+  local window = hl.get_active_window()
+
+  for _, entry in ipairs(forwards) do
+    local in_app = window ~= nil and window_matches_any(window, entry.apps)
+    entry.forward:set_enabled(in_app)
+    if entry.default then
+      entry.default:set_enabled(not in_app)
     end
   end
 end
 
-hl.unbind("SUPER + T")
-o.bind(
-  "SUPER + T",
-  "New tab (Chrome) / toggle window floating",
-  in_chrome(send_shortcut_once("CTRL", "T"), hl.dsp.window.float({ action = "toggle" }))
-)
+hl.on("window.active", refresh_forwards)
 
-hl.unbind("SUPER + W")
-o.bind(
-  "SUPER + W",
-  "Close tab (Chrome) / close window",
-  in_chrome(send_shortcut_once("CTRL", "W"), hl.dsp.window.close())
-)
+forward_in_app({ chrome, vscode }, "SUPER + T") -- new tab / new file
+forward_in_app({ chrome, vscode }, "SUPER + W") -- close tab / close editor (SUPER + Q still closes the window)
+forward_in_app({ chrome }, "SUPER + R") -- reload page
+forward_in_app({ vscode }, "SUPER + S") -- save
+forward_in_app({ vscode }, "SUPER + N") -- new file
+forward_in_app({ vscode }, "SUPER + P") -- quick open
+forward_in_app({ vscode }, "SUPER + SHIFT + P") -- command palette
+forward_in_app({ vscode }, "SUPER + SHIFT + X") -- extensions
 
--- SUPER + R is unbound by default, so it only needs to do anything in Chrome:
--- macOS Command+R reload. Outside Chrome it is a deliberate no-op.
-o.bind(
-  "SUPER + R",
-  "Reload page (Chrome)",
-  in_chrome(send_shortcut_once("CTRL", "R"), hl.dsp.exec_cmd("true"))
-)
+refresh_forwards()
 
 -- ===========================================================================
 -- macOS-style screenshot to clipboard
