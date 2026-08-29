@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "kierangill.istat",
+  "name": "iStat",
+  "version": "2.0.0",
+  "author": "Kieran Gill",
+  "description": "iStat Menus-style CPU graph + memory bar with a native drop-down stats panel",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" },
+  "barWidget": {
+    "displayName": "iStat",
+    "description": "CPU history graph and memory usage bar with a click-to-open detail panel",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": { "interval": 2000, "showText": true, "topProcs": 5 },
+    "schema": [
+      { "key": "interval", "type": "number", "label": "Refresh interval (ms)" },
+      { "key": "showText", "type": "boolean", "label": "Show percentages" },
+      { "key": "topProcs", "type": "number", "label": "Processes per list" }
+    ]
+  }
+}
