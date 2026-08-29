@@ -1,6 +1,6 @@
 # Config
 
-Personal configuration files and package install scripts for various profiles (common, development).
+Personal configuration files and package install scripts for various profiles (common, development, omarchy).
 
 ## Install
 
@@ -23,6 +23,7 @@ bash bootstrap.sh
 
 - `common` Configuration and software I want across all machines
 - `development` Additional configuration and software for programming development, like Python
+- `omarchy` Hyprland and Omarchy shell customizations. Only useful on an Omarchy machine; leave it off elsewhere.
 
 ## How this works
 

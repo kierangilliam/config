@@ -25,7 +25,7 @@ pkg stow
 # Profile configuration
 # ---------------------------
 
-OPTIONAL_PROFILES=("development" "remote_development")
+OPTIONAL_PROFILES=("development" "remote_development" "omarchy")
 ALWAYS_ENABLED=("common")
 
 # ---------------------------
