@@ -20,7 +20,8 @@ size-vertical    = 28
 # Shared Hyprland-derived border tokens. Surface sections reference these so
 # lock, notifications, popups, and menu-style cards stay aligned with the
 # current Hyprland active-border gradient.
-active-border            = "{{ shell_gradient hyprland_active_border accent }}"
+# Neutral hairline instead of the theme accent, matching the Hyprland window border.
+active-border            = "rgba(ffffff22)"
 active-border-foreground = "{{ shell_gradient hyprland_active_border foreground }}"
 
 [controls]
@@ -137,7 +138,7 @@ border-alpha     = 1.0
 background       = "{{ background }}"
 background-alpha = 0.97
 text             = "{{ foreground }}"
-border           = "hyprland.active-border-foreground"
+border           = "rgba(ffffff22)"   # match window border
 border-alpha     = 1.0
 
 [notifications]
@@ -159,7 +160,8 @@ countdown        = "{{ accent }}"
 background                = "{{ background }}"
 background-alpha          = 0.95
 text                      = "{{ foreground }}"
-border                    = "hyprland.active-border-foreground"
+border                    = "rgba(ffffff22)"   # match window border
+border-width              = 1
 border-alpha              = 1.0
 scrim                     = "{{ background }}"
 scrim-alpha               = 0.5
@@ -176,7 +178,8 @@ selected-border-alpha     = 0.25
 background                = "{{ background }}"
 background-alpha          = 1.0
 text                      = "{{ foreground }}"
-border                    = "hyprland.active-border-foreground"
+border                    = "rgba(ffffff22)"   # match window border
+border-width              = 1
 border-alpha              = 1.0
 scrim                     = "{{ background }}"
 scrim-alpha               = 0.5

@@ -71,3 +71,36 @@ hl.config({
     gaps_out = { top = 10, right = 10, bottom = 10, left = 10 },
   },
 })
+
+-- Focus is shown by shadow depth and a slight dim, not a colored border.
+-- Borders are a neutral hairline so they do not change with the theme accent.
+local hairline_active = "rgba(ffffff22)"
+local hairline_inactive = "rgba(ffffff12)"
+hl.config({
+  general = {
+    border_size = 1,
+    col = {
+      active_border = hairline_active,
+      inactive_border = hairline_inactive,
+    },
+  },
+  group = {
+    col = {
+      border_active = hairline_active,
+      border_inactive = hairline_inactive,
+      border_locked_active = hairline_active,
+      border_locked_inactive = hairline_inactive,
+    },
+  },
+  decoration = {
+    shadow = {
+      enabled = true,
+      range = 30,
+      render_power = 3,
+      color = "rgba(00000077)",
+      color_inactive = "rgba(00000030)",
+    },
+    dim_inactive = true,
+    dim_strength = 0.08,
+  },
+})
