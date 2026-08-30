@@ -310,3 +310,12 @@ o.bind(
   "Screenshot region to clipboard",
   "omarchy-capture-screenshot region copy && omarchy-notification-send 'Screenshot copied to clipboard' -t 2000"
 )
+
+-- ===========================================================================
+-- Reset window split
+-- ===========================================================================
+-- After dragging a split with SUPER + right-drag, snap the focused window's
+-- split back to 50/50. 0 as in "reset"; SUPER + 0 is workspace 10 but the
+-- CTRL variant is free. Argument order: Hyprland 0.56's Lua layout parser wants
+-- "splitratio <ratio> exact", not the wiki's "exact <ratio>".
+o.bind("SUPER + CTRL + 0", "Reset window split", hl.dsp.layout("splitratio 1 exact"))
