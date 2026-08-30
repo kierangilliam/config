@@ -236,15 +236,20 @@ end
 
 local forwards = {}
 
-local function forward_in_app(apps, chord)
+-- The optional third argument sends a different chord instead of the
+-- SUPER-to-CTRL translation, for shortcuts whose macOS and Linux forms don't
+-- line up that way (Command+[ is Alt+Left in Chrome).
+local function forward_in_app(apps, chord, send_chord)
   local tokens = {}
-  for token in chord:upper():gmatch("[^%s+]+") do
+  for token in (send_chord or chord):upper():gmatch("[^%s+]+") do
     table.insert(tokens, token)
   end
   local key = table.remove(tokens)
-  for index, token in ipairs(tokens) do
-    if token == "SUPER" then
-      tokens[index] = "CTRL"
+  if not send_chord then
+    for index, token in ipairs(tokens) do
+      if token == "SUPER" then
+        tokens[index] = "CTRL"
+      end
     end
   end
   local mods = table.concat(tokens, " ")
@@ -282,6 +287,10 @@ hl.on("window.active", refresh_forwards)
 forward_in_app({ chrome, vscode }, "SUPER + T") -- new tab / new file
 forward_in_app({ chrome, vscode }, "SUPER + W") -- close tab / close editor (SUPER + Q still closes the window)
 forward_in_app({ chrome }, "SUPER + R") -- reload page
+-- Back/forward. ALT + arrows are window focus in Hyprland, but injecting them
+-- straight into the window bypasses those bindings, so Chrome still sees them.
+forward_in_app({ chrome }, "SUPER + BRACKETLEFT", "ALT + Left")
+forward_in_app({ chrome }, "SUPER + BRACKETRIGHT", "ALT + Right")
 forward_in_app({ vscode }, "SUPER + S") -- save
 forward_in_app({ vscode }, "SUPER + N") -- new file
 forward_in_app({ vscode }, "SUPER + P") -- quick open
