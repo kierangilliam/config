@@ -90,7 +90,7 @@ Istat.IstatPanel {
       visible: root.showText
       anchors.verticalCenter: parent.verticalCenter
       text: root.pct(root.cpu.busy)
-      color: root.cpu.busy > 85 ? root.warn : root.buttonForeground
+      color: root.buttonForeground
       font.family: root.family
       font.pixelSize: Style.font.caption
       width: 30
