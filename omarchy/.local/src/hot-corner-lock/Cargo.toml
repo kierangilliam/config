@@ -1,0 +1,12 @@
+[package]
+name = "hot-corner-lock"
+version = "0.1.0"
+edition = "2021"
+description = "macOS-style hot corner for Hyprland: bottom-right locks the screen"
+
+[dependencies]
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
