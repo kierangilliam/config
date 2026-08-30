@@ -81,9 +81,9 @@ o.window(".*", { scroll_touchpad = 0.4 })                    -- was 0.4
 o.window("(Alacritty|kitty|foot)", { scroll_touchpad = 0.6 }) -- was 0.4*1.5
 o.window("com.mitchellh.ghostty", { scroll_touchpad = 0.08 }) -- was 0.4*0.2
 
--- Agent windows (Claude Code etc.). omarchy-agent launches foot under the
+-- Agent windows (Claude Code etc.). omarchy-agent launches ghostty under the
 -- app-id org.omarchy.agent, so the terminal rule above never matches them.
-o.window("org.omarchy.agent", { scroll_touchpad = 1.0 })
+o.window("org.omarchy.agent", { scroll_touchpad = 0.2 })
 
 -- Slower touchpad scrolling in Chrome only (was 0.4*0.25).
 o.window("google-chrome", { scroll_touchpad = 0.1 })
