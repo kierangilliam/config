@@ -5,14 +5,14 @@ import qs.Commons
 import qs.Ui
 import "Model.js" as Model
 
-// Base for the iStat CPU / Memory / Network widgets: a bar button with
+// Base for the iStat CPU / Memory / Network / Disk widgets: a bar button with
 // widget-supplied content, a native drop-down panel, and a polling
 // `collect.sh <section>` snapshot whose parsed result is emitted via
 // `snapshot(snap, dtSec)`. Widgets own the state, painting, and rows.
 Panel {
   id: root
 
-  // Which collect.sh section to gather (cpu | mem | net).
+  // Which collect.sh section to gather (cpu | mem | net | disk).
   property string section: ""
   property int interval: setting("interval", 2000)
   // Keep the panel refresh snappy while it's open.

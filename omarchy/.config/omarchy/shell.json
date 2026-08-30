@@ -38,6 +38,9 @@
           "id": "kierangill.istat-network"
         },
         {
+          "id": "kierangill.istat-disk"
+        },
+        {
           "id": "omarchy.clock",
           "format": "dddd HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",

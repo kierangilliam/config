@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "kierangill.istat-disk",
+  "name": "iStat Disk",
+  "version": "3.0.0",
+  "author": "Kieran Gill",
+  "description": "iStat Menus-style SSD usage ring with a drop-down capacity breakdown, read/write activity graph, largest directories, and mounted volumes",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" },
+  "barWidget": {
+    "displayName": "iStat Disk",
+    "description": "SSD usage ring + percentage; click for used/free/total, disk model, read/write activity, largest directories, and other volumes",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": { "interval": 2000, "showText": true, "topDirs": 6 },
+    "schema": [
+      { "key": "interval", "type": "number", "label": "Refresh interval (ms)" },
+      { "key": "showText", "type": "boolean", "label": "Show percentage" },
+      { "key": "topDirs", "type": "number", "label": "Largest directories to list" }
+    ]
+  }
+}

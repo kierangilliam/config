@@ -1,14 +1,15 @@
 .pragma library
 
 // Parsing, deltas, formatting, and canvas painters shared by the iStat
-// CPU / Memory / Network widgets. Ported from istat-mon's sysinfo.py / graphs.py.
+// CPU / Memory / Network / Disk widgets. Ported from istat-mon's sysinfo.py / graphs.py.
 
 var HISTORY = 90
 
 // ------------------------------------------------------------ snapshot
 function parseSnapshot(text) {
   var snap = { clk: 100, page: 4096, stat: {}, mem: {}, load: [0, 0, 0], uptime: 0, zram: 0, psi: 0, procs: [],
-               net: {}, addr: {}, route: { iface: "", gateway: "" }, wifi: {} }
+               net: {}, addr: {}, route: { iface: "", gateway: "" }, wifi: {},
+               df: [], diskio: {}, disk: { name: "", rotational: "", model: "" }, du: [] }
   var section = ""
   var lines = String(text || "").split("\n")
   for (var i = 0; i < lines.length; i++) {
@@ -60,6 +61,20 @@ function parseSnapshot(text) {
         break
       case "wifi":
         if (parts.length >= 2) snap.wifi[parts[0]] = parts.slice(1).join(" ")
+        break
+      case "df":
+        if (parts.length >= 6)
+          snap.df.push({ device: parts[0], fstype: parts[1], total: Number(parts[2]) || 0, used: Number(parts[3]) || 0,
+                         free: Number(parts[4]) || 0, mount: parts.slice(5).join(" ") })
+        break
+      case "diskio":
+        if (parts.length >= 3) snap.diskio[parts[0]] = { rd: (Number(parts[1]) || 0) * 512, wr: (Number(parts[2]) || 0) * 512 }
+        break
+      case "disk":
+        snap.disk = { name: parts[0] || "", rotational: parts[1] || "", model: parts.slice(2).join(" ") }
+        break
+      case "du":
+        if (parts.length >= 3) snap.du.push({ bytes: Number(parts[0]) || 0, isDir: parts[1] === "d", path: parts.slice(2).join(" ") })
         break
     }
   }
@@ -183,6 +198,46 @@ function ifaceList(snap, primary) {
     return x.name < y.name ? -1 : x.name > y.name ? 1 : 0
   })
   return out
+}
+
+// ---------------------------------------------------------------- Disk
+// One entry per device (btrfs subvolumes / bind mounts collapse onto their
+// shortest mount point), "/" first, then alphabetical by mount.
+function volumes(snap) {
+  var byDev = {}
+  for (var i = 0; i < snap.df.length; i++) {
+    var v = snap.df[i]
+    if (!byDev[v.device] || v.mount.length < byDev[v.device].mount.length) byDev[v.device] = v
+  }
+  var out = []
+  for (var k in byDev) {
+    var d = byDev[k]
+    out.push({ device: d.device, fstype: d.fstype, mount: d.mount, total: d.total, used: d.used, free: d.free,
+               usedPct: d.total ? 100 * d.used / d.total : 0 })
+  }
+  out.sort(function(a, b) {
+    if (a.mount === "/") return -1
+    if (b.mount === "/") return 1
+    return a.mount < b.mount ? -1 : a.mount > b.mount ? 1 : 0
+  })
+  return out
+}
+
+// Read / write bytes per second across all physical disks, plus totals since boot.
+function diskDelta(prevSnap, curSnap, dtSec) {
+  var rd = 0, wr = 0, prd = 0, pwr = 0
+  for (var k in curSnap.diskio) {
+    rd += curSnap.diskio[k].rd; wr += curSnap.diskio[k].wr
+    var p = prevSnap && prevSnap.diskio[k]
+    if (p) { prd += p.rd; pwr += p.wr }
+  }
+  var ok = prevSnap && dtSec > 0
+  return { read: ok ? Math.max(0, (rd - prd) / dtSec) : 0, write: ok ? Math.max(0, (wr - pwr) / dtSec) : 0,
+           readTotal: rd, writeTotal: wr }
+}
+
+function diskKind(snap) {
+  return { "0": "SSD", "1": "HDD" }[snap.disk.rotational] || "Disk"
 }
 
 // ------------------------------------------------------------ Formatting

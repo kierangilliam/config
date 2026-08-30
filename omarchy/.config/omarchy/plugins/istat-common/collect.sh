@@ -1,6 +1,6 @@
 #!/bin/sh
 # One-shot system snapshot for the iStat widgets. Each section starts with "@name".
-# Usage: collect.sh cpu|mem|net   (no argument = everything)
+# Usage: collect.sh cpu|mem|net|disk   (no argument = everything); collect.sh du [dir] for the slow scan
 what="${1:-all}"
 
 want() { [ "$what" = all ] || [ "$what" = "$1" ]; }
@@ -74,4 +74,49 @@ if want net; then
     s=$(iw dev "$i" link 2>/dev/null | awk -F'SSID: ' '/SSID/ { print $2; exit }')
     [ -n "$s" ] && echo "$i $s"
   done
+fi
+
+if want disk; then
+  echo "@df"
+  # source fstype size used avail mount   (block-device filesystems only; bytes)
+  df -B1 --output=source,fstype,size,used,avail,target 2>/dev/null | awk 'NR > 1 && $1 ~ /^\/dev\//'
+  echo "@diskio"
+  # disk sectors_read sectors_written   (whole physical disks only, 512-byte sectors)
+  for d in /sys/block/*; do
+    n=$(basename "$d")
+    case "$n" in loop*|ram*|zram*|dm-*|md*|sr*) continue ;; esac
+    [ -r "$d/stat" ] && awk -v n="$n" '{ print n, $3, $7 }' "$d/stat"
+  done
+  echo "@disk"
+  # physical disk behind /: name rotational model
+  src=$(findmnt -no SOURCE / 2>/dev/null | sed "s/\[.*//")
+  if [ -b "$src" ]; then
+    p=$(readlink -f "/sys/dev/block/$(stat -Lc '%Hr:%Lr' "$src")" 2>/dev/null)
+    i=0
+    while [ -n "$p" ] && [ $i -lt 8 ]; do
+      i=$((i + 1))
+      s=$(ls "$p/slaves" 2>/dev/null | head -1)
+      if [ -n "$s" ]; then p=$(readlink -f "$p/slaves/$s"); continue; fi
+      if [ -e "$p/partition" ]; then p=$(dirname "$p"); continue; fi
+      break
+    done
+    n=$(basename "$p")
+    rot=$(cat "$p/queue/rotational" 2>/dev/null)
+    model=$(cat "$p/device/model" 2>/dev/null || cat "$p/device/name" 2>/dev/null)
+    echo "$n ${rot:--} $model"
+  fi
+fi
+
+# Slow (seconds): largest entries. No dir = top-level directories of / and $HOME;
+# with a dir = its immediate children (files included), for drilling down.
+if [ "$what" = du ]; then
+  echo "@du"
+  # bytes d|f path
+  tag() { while IFS="$(printf '\t')" read -r b p; do if [ -d "$p" ]; then echo "$b d $p"; else echo "$b f $p"; fi; done; }
+  if [ -n "$2" ]; then
+    du -x -a -d1 -B1 -- "$2" 2>/dev/null | awk -v d="$2" '$2 != d'
+  else
+    du -x -d1 -B1 / 2>/dev/null | awk -v h="$HOME" '$2 != "/" && $2 != "/home" && $2 != h'
+    du -x -d1 -B1 "$HOME" 2>/dev/null | awk -v h="$HOME" '$2 != h'
+  fi | sort -rn | head -15 | tag
 fi
