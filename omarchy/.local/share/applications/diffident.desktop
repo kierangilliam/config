@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Diffident
+GenericName=Git Diff Viewer
+Comment=A git diff viewer built from Zed's crates
+Exec=/home/kierangill/.cargo/bin/diffident %F
+Icon=diffident
+Terminal=false
+Categories=Development;RevisionControl;
+Keywords=git;diff;zed;
+StartupNotify=true
+StartupWMClass=dev.zed.Zed-Dev
