@@ -1,0 +1,293 @@
+#!/usr/bin/env python3
+"""Save Hyprland windows and restore them (app, workspace, float/size/position) after a reboot.
+
+Usage:
+  omarchy-window-session save      Snapshot the current windows
+  omarchy-window-session restore   Relaunch saved apps and put their windows back
+  omarchy-window-session daemon    Restore once, then keep snapshotting (run from autostart)
+  omarchy-window-session show      Print the saved snapshot
+
+Tiled windows are returned to their workspace in the order they were saved; Hyprland's
+layout decides their exact tile. Floating windows get their exact position and size.
+"""
+
+import configparser
+import json
+import os
+import shlex
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+STATE_FILE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "omarchy/window-session.json"
+
+# How often the daemon samples windows. A snapshot is only written once the layout has
+# stayed the same for two samples in a row, so the burst of closes during
+# `omarchy reboot`/`shutdown` (which finishes in ~2s) never overwrites a good snapshot.
+POLL_SECONDS = 15
+
+# How long restore waits for apps to open their windows.
+RESTORE_TIMEOUT = 60
+# If an app hasn't produced all its saved windows after this long, launch it again
+# (needed for single-instance apps like Ghostty, where one launch = one window).
+RELAUNCH_AFTER = 8
+
+# Windows on special workspaces (scratchpad, etc.) are skipped by default.
+SKIP_SPECIAL_WORKSPACES = True
+SKIP_CLASSES = set()
+
+
+# --- Hyprland -----------------------------------------------------------------------------
+
+def hyprctl_json(what):
+    out = subprocess.run(["hyprctl", what, "-j"], capture_output=True, text=True, check=True).stdout
+    return json.loads(out)
+
+
+def dispatch(lua):
+    subprocess.run(["hyprctl", "dispatch", lua], capture_output=True, text=True)
+
+
+def lua_str(s):
+    return json.dumps(str(s))  # JSON string escaping is valid Lua for our inputs
+
+
+def win_dispatch(address, fn, **args):
+    args["window"] = f"address:{address}"
+    body = ", ".join(f"{k} = {lua_str(v) if isinstance(v, str) else str(v).lower() if isinstance(v, bool) else v}"
+                     for k, v in args.items())
+    dispatch(f"hl.dsp.window.{fn}({{ {body} }})")
+
+
+# --- Working out how to relaunch a window -------------------------------------------------
+
+def desktop_dirs():
+    data_home = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share"))
+    data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":")
+    return [Path(d) / "applications" for d in [data_home, *data_dirs]]
+
+
+def desktop_exec(window_class):
+    """Exec line of the .desktop entry whose id or StartupWMClass matches the window class."""
+    wanted = window_class.lower()
+    fallback = None
+    for d in desktop_dirs():
+        if not d.is_dir():
+            continue
+        for f in sorted(d.glob("*.desktop")):
+            cp = configparser.ConfigParser(interpolation=None, strict=False)
+            try:
+                cp.read(f, encoding="utf-8")
+                entry = cp["Desktop Entry"]
+            except Exception:
+                continue
+            exec_line = entry.get("Exec")
+            if not exec_line:
+                continue
+            if f.stem.lower() == wanted:
+                return exec_line
+            if fallback is None and entry.get("StartupWMClass", "").lower() == wanted:
+                fallback = exec_line
+    return fallback
+
+
+def clean_exec(exec_line):
+    args = [a for a in shlex.split(exec_line) if not (len(a) == 2 and a.startswith("%"))]
+    return [a.replace("%%", "%") for a in args]
+
+
+def launch_command(pid, window_class):
+    try:
+        argv = Path(f"/proc/{pid}/cmdline").read_bytes().split(b"\0")
+        argv = [a.decode(errors="replace") for a in argv if a]
+    except OSError:
+        argv = []
+
+    # Commands pointing into /tmp (AppImage mounts, CLI sockets like Zed's) won't survive a
+    # reboot, so fall back to the app's desktop entry.
+    if not argv or any("/tmp/" in a for a in argv):
+        exec_line = desktop_exec(window_class)
+        if exec_line:
+            return clean_exec(exec_line)
+        argv = [a for a in argv if "/tmp/" not in a]
+    return argv or None
+
+
+# --- Save ---------------------------------------------------------------------------------
+
+def snapshot():
+    windows = []
+    for c in hyprctl_json("clients"):
+        ws = c["workspace"]["name"]
+        if not c.get("mapped", True) or c["class"] in SKIP_CLASSES or not c["class"]:
+            continue
+        if SKIP_SPECIAL_WORKSPACES and ws.startswith("special:"):
+            continue
+        windows.append({
+            "class": c["class"],
+            "title": c["title"],
+            "workspace": ws,
+            "floating": c["floating"],
+            "at": c["at"],
+            "size": c["size"],
+            "fullscreen": c.get("fullscreen", 0),
+            "pinned": c.get("pinned", False),
+            "command": launch_command(c["pid"], c["class"]),
+        })
+    # Saved order = order windows get reopened, which drives tiling order per workspace.
+    windows.sort(key=lambda w: (w["workspace"], w["at"][0], w["at"][1]))
+    return windows
+
+
+def layout_key(windows):
+    return [(w["class"], w["workspace"], w["floating"], w["at"], w["size"]) for w in windows]
+
+
+def write_state(windows):
+    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = STATE_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"saved_at": time.time(), "windows": windows}, indent=2))
+    tmp.replace(STATE_FILE)
+
+
+def save():
+    windows = snapshot()
+    if not windows:
+        print("No windows open; keeping previous snapshot.")
+        return
+    write_state(windows)
+    print(f"Saved {len(windows)} windows to {STATE_FILE}")
+
+
+# --- Restore ------------------------------------------------------------------------------
+
+def spawn(argv):
+    if shutil.which("uwsm-app"):
+        argv = ["uwsm-app", "--", *argv]
+    subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True, cwd=Path.home())
+
+
+def place(address, slot, current):
+    win_dispatch(address, "move", workspace=slot["workspace"], follow=False)
+    if slot["floating"]:
+        if not current["floating"]:
+            win_dispatch(address, "float", action="enable")
+        win_dispatch(address, "resize", x=slot["size"][0], y=slot["size"][1])
+        win_dispatch(address, "move", x=slot["at"][0], y=slot["at"][1])
+    elif current["floating"]:
+        win_dispatch(address, "float", action="disable")
+    if slot["pinned"] and not current.get("pinned"):
+        win_dispatch(address, "pin")
+    if slot["fullscreen"] and not current.get("fullscreen"):
+        win_dispatch(address, "fullscreen", mode="maximized" if slot["fullscreen"] == 1 else "fullscreen")
+
+
+def take_slot(slots, window):
+    """Pick the best unfilled slot for a newly opened window: same class, same title if possible."""
+    candidates = [s for s in slots if not s.get("_filled") and s["class"] == window["class"]]
+    if not candidates:
+        return None
+    exact = [s for s in candidates if s["title"] == window["title"]]
+    slot = (exact or candidates)[0]
+    slot["_filled"] = True
+    return slot
+
+
+def restore():
+    if not STATE_FILE.exists():
+        print("No saved window session.")
+        return
+    slots = json.loads(STATE_FILE.read_text())["windows"]
+
+    # Windows already open (e.g. running restore by hand) are placed rather than relaunched.
+    seen = set()
+    for c in hyprctl_json("clients"):
+        seen.add(c["address"])
+        slot = take_slot(slots, c)
+        if slot:
+            place(c["address"], slot, c)
+
+    # One group per (class, command): launched once, then again while windows are missing.
+    groups = {}
+    for s in slots:
+        if not s.get("_filled") and s["command"]:
+            groups.setdefault((s["class"], tuple(s["command"])), []).append(s)
+
+    now = time.monotonic()
+    state = {key: {"launches": 0, "last": 0.0} for key in groups}
+    deadline = now + RESTORE_TIMEOUT
+
+    while time.monotonic() < deadline:
+        now = time.monotonic()
+        pending = {k: g for k, g in groups.items() if any(not s.get("_filled") for s in g)}
+        if not pending:
+            break
+
+        for key, group in pending.items():
+            st = state[key]
+            if st["launches"] < len(group) and now - st["last"] >= (RELAUNCH_AFTER if st["launches"] else 0):
+                spawn(list(key[1]))
+                st["launches"] += 1
+                st["last"] = now
+
+        time.sleep(0.5)
+        for c in hyprctl_json("clients"):
+            if c["address"] in seen:
+                continue
+            seen.add(c["address"])
+            slot = take_slot(slots, c)
+            if slot:
+                place(c["address"], slot, c)
+                for key, group in groups.items():
+                    if slot in group:
+                        state[key]["last"] = time.monotonic()  # app is alive; give it time for more
+
+    missing = [s["class"] for s in slots if not s.get("_filled")]
+    print(f"Restored {len(slots) - len(missing)}/{len(slots)} windows"
+          + (f"; missing: {', '.join(missing)}" if missing else ""))
+
+
+# --- Daemon -------------------------------------------------------------------------------
+
+def daemon():
+    try:
+        restore()
+    except Exception as e:  # never let a bad snapshot stop us from saving new ones
+        print(f"Restore failed: {e}", file=sys.stderr)
+
+    last_seen = None
+    last_saved = None
+    while True:
+        time.sleep(POLL_SECONDS)
+        try:
+            windows = snapshot()
+        except Exception as e:
+            print(f"Snapshot failed: {e}", file=sys.stderr)
+            continue
+        key = layout_key(windows)
+        if windows and key == last_seen and key != last_saved:
+            write_state(windows)
+            last_saved = key
+        last_seen = key
+
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "--help"
+    if cmd == "save":
+        save()
+    elif cmd == "restore":
+        restore()
+    elif cmd == "daemon":
+        daemon()
+    elif cmd == "show":
+        print(STATE_FILE.read_text() if STATE_FILE.exists() else "No saved window session.")
+    else:
+        print(__doc__.strip())
+        sys.exit(0 if cmd in ("-h", "--help") else 1)
+
+
+if __name__ == "__main__":
+    main()
