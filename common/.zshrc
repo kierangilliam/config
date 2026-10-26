@@ -99,7 +99,7 @@ unset f
 [ -f "$HOME/.zshrc.local" ] && . "$HOME/.zshrc.local"
 
 # The next line updates PATH for the Google Cloud SDK.
-if [ -f '/home/node/google-cloud-sdk/path.zsh.inc' ]; then . '/home/node/google-cloud-sdk/path.zsh.inc'; fi
+if [ -f '/home/kierangill/gcloud/google-cloud-sdk/path.zsh.inc' ]; then . '/home/kierangill/gcloud/google-cloud-sdk/path.zsh.inc'; fi
 
 # The next line enables shell command completion for gcloud.
-if [ -f '/home/node/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/node/google-cloud-sdk/completion.zsh.inc'; fi
+if [ -f '/home/kierangill/gcloud/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/kierangill/gcloud/google-cloud-sdk/completion.zsh.inc'; fi
