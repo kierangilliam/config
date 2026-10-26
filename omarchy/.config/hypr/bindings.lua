@@ -25,7 +25,7 @@
 
 -- Logitech MX Keys examples:
 -- o.bind("SUPER + SHIFT + S", nil, "omarchy-capture-screenshot")
--- o.bind("SUPER + H", nil, "voxtype record toggle")
+o.bind("ALT + SPACE", "Voxtype", "voxtype record toggle")
 -- o.bind("SUPER + PERIOD", nil, "omarchy-shell shell toggle omarchy.emojis")
 
 -- SUPER+SHIFT+A was the ChatGPT webapp; use the terminal agent instead.
@@ -218,51 +218,88 @@ end)
 -- there is one definition of what counts as a Chrome-family browser. Webapp
 -- windows (chrome-<site>__-Default) do not carry that tag, and that is the
 -- behaviour we want: they have no tab bar, so SUPER + W closes them outright.
+--
+-- An app marked raw gets the chord re-sent unchanged instead of translated.
+-- Zed needs this: its vim mode takes over many CTRL chords (CTRL+V is visual
+-- block, CTRL+A increments, CTRL+W deletes a word, CTRL+C leaves insert mode),
+-- so ~/.config/zed/keymap.json binds super-v, super-a, etc. directly and the
+-- SUPER chord just has to get past Omarchy's default.
 local vscode = { class = "code" }
+local zed = { class = "dev.zed.Zed", raw = true } -- stable channel app id (Preview is dev.zed.Zed-Preview)
 local chrome = { tag = "chromium-based-browser" }
 
-local function window_matches_any(window, apps)
+local function matching_app(window, apps)
+  if not window then
+    return nil
+  end
+
   for _, app in ipairs(apps) do
     if app.tag and window_has_tag(window, app.tag) then
-      return true
+      return app
     end
     if app.class and window.class == app.class then
-      return true
+      return app
     end
   end
 
-  return false
+  return nil
 end
 
-local forwards = {}
-
--- The optional third argument sends a different chord instead of the
--- SUPER-to-CTRL translation, for shortcuts whose macOS and Linux forms don't
--- line up that way (Command+[ is Alt+Left in Chrome).
-local function forward_in_app(apps, chord, send_chord)
+-- "SUPER + SHIFT + P" -> mods "SUPER SHIFT", key "P"; SUPER becomes CTRL
+-- unless `raw`.
+local function split_chord(chord, raw)
   local tokens = {}
-  for token in (send_chord or chord):upper():gmatch("[^%s+]+") do
+  for token in chord:upper():gmatch("[^%s+]+") do
     table.insert(tokens, token)
   end
   local key = table.remove(tokens)
-  if not send_chord then
+  if not raw then
     for index, token in ipairs(tokens) do
       if token == "SUPER" then
         tokens[index] = "CTRL"
       end
     end
   end
-  local mods = table.concat(tokens, " ")
+
+  return table.concat(tokens, " "), key
+end
+
+local forwards = {}
+local forwarded_chords = {}
+
+-- The optional third argument sends a different chord instead of the
+-- SUPER-to-CTRL translation, for shortcuts whose macOS and Linux forms don't
+-- line up that way (Command+[ is Alt+Left in Chrome). Raw apps ignore it.
+local function forward_in_app(apps, chord, send_chord)
+  -- The forwarding keybind takes over the chord's registry slot, so a second
+  -- call for the same chord would find this forward instead of the Omarchy
+  -- default and leave the default enabled in-app. List every app in one call.
+  assert(not forwarded_chords[chord], "forward_in_app: " .. chord .. " is already forwarded; list all apps in one call")
+  forwarded_chords[chord] = true
+
+  local mods, key = split_chord(send_chord or chord, send_chord ~= nil)
+  local raw_mods, raw_key = split_chord(chord, true)
 
   local names = {}
   for _, app in ipairs(apps) do
     table.insert(names, app.class or app.tag)
   end
 
+  -- Decided per press, since one chord can serve a translated app and a raw
+  -- app at once.
+  local function dispatch()
+    local app = matching_app(hl.get_active_window(), apps)
+    if app and app.raw then
+      send_shortcut_once(raw_mods, raw_key)()
+    else
+      send_shortcut_once(mods, key)()
+    end
+  end
+
   -- Look up the default before binding: the forwarding keybind takes over the
   -- chord's registry slot.
   local default = hl.find_keybind(chord)
-  local forward = hl.bind(chord, send_shortcut_once(mods, key), {
+  local forward = hl.bind(chord, dispatch, {
     description = mods:gsub(" ", "+") .. "+" .. key .. " (" .. table.concat(names, ", ") .. ")",
   })
   forward:set_enabled(false)
@@ -274,7 +311,7 @@ local function refresh_forwards()
   local window = hl.get_active_window()
 
   for _, entry in ipairs(forwards) do
-    local in_app = window ~= nil and window_matches_any(window, entry.apps)
+    local in_app = matching_app(window, entry.apps) ~= nil
     entry.forward:set_enabled(in_app)
     if entry.default then
       entry.default:set_enabled(not in_app)
@@ -284,20 +321,55 @@ end
 
 hl.on("window.active", refresh_forwards)
 
-forward_in_app({ chrome, vscode }, "SUPER + T") -- new tab / new file
-forward_in_app({ chrome, vscode }, "SUPER + W") -- close tab / close editor (SUPER + Q still closes the window)
+forward_in_app({ chrome, vscode, zed }, "SUPER + T") -- new tab / new file / project symbols
+forward_in_app({ chrome, vscode, zed }, "SUPER + W") -- close tab / close editor (SUPER + Q still closes the window)
 forward_in_app({ chrome }, "SUPER + R") -- reload page
 -- Back/forward. ALT + arrows are window focus in Hyprland, but injecting them
 -- straight into the window bypasses those bindings, so Chrome still sees them.
 forward_in_app({ chrome }, "SUPER + BRACKETLEFT", "ALT + Left")
 forward_in_app({ chrome }, "SUPER + BRACKETRIGHT", "ALT + Right")
-forward_in_app({ vscode }, "SUPER + S") -- save
-forward_in_app({ vscode }, "SUPER + N") -- new file
-forward_in_app({ vscode }, "SUPER + P") -- quick open
-forward_in_app({ vscode }, "SUPER + SHIFT + P") -- command palette
-forward_in_app({ vscode }, "SUPER + SHIFT + X") -- extensions
+-- Tab switching. Chrome has no native Command+Shift+[/] binding, so these go
+-- to its Ctrl+Shift+Tab / Ctrl+Tab equivalents instead.
+forward_in_app({ chrome }, "SUPER + SHIFT + BRACKETLEFT", "CTRL + SHIFT + Tab") -- previous tab
+forward_in_app({ chrome }, "SUPER + SHIFT + BRACKETRIGHT", "CTRL + Tab") -- next tab
+forward_in_app({ vscode, zed }, "SUPER + S") -- save
+forward_in_app({ vscode, zed }, "SUPER + N") -- new file
+forward_in_app({ vscode, zed }, "SUPER + P") -- quick open
+forward_in_app({ vscode, zed }, "SUPER + SHIFT + P") -- command palette
+forward_in_app({ vscode, zed }, "SUPER + SHIFT + X") -- extensions
+-- Omarchy's universal copy/paste/cut send CTRL+C/V/X, which vim mode hijacks,
+-- so Zed gets these raw too. SUPER + SHIFT + E is already unbound above and
+-- reaches Zed without help.
+forward_in_app({ zed }, "SUPER + C") -- copy
+forward_in_app({ zed }, "SUPER + V") -- paste
+forward_in_app({ zed }, "SUPER + X") -- cut
 
 refresh_forwards()
+
+-- ===========================================================================
+-- macOS-style select all and jump to document start/end
+-- ===========================================================================
+-- Command+A and Command+Up/Down in every app, not just editors. Most apps get
+-- the Linux equivalent; Zed gets the SUPER chord unchanged, since
+-- ~/.config/zed/keymap.json binds super-a / super-up / super-down itself.
+-- Terminals skip select all: CTRL+A there is readline's beginning-of-line.
+local function document_shortcut(chord, mods, key, skip_in_terminal)
+  local raw_mods, raw_key = split_chord(chord, true)
+
+  return function()
+    if matching_app(hl.get_active_window(), { zed }) then
+      send_shortcut_once(raw_mods, raw_key)()
+    elseif not (skip_in_terminal and active_window_is_terminal()) then
+      send_shortcut_once(mods, key)()
+    end
+  end
+end
+
+o.bind("SUPER + A", "Select all", document_shortcut("SUPER + A", "CTRL", "A", true))
+o.bind("SUPER + UP", "Jump to start of document", document_shortcut("SUPER + UP", "CTRL", "Home"))
+o.bind("SUPER + DOWN", "Jump to end of document", document_shortcut("SUPER + DOWN", "CTRL", "End"))
+o.bind("SUPER + SHIFT + UP", "Select to start of document", document_shortcut("SUPER + SHIFT + UP", "CTRL SHIFT", "Home"))
+o.bind("SUPER + SHIFT + DOWN", "Select to end of document", document_shortcut("SUPER + SHIFT + DOWN", "CTRL SHIFT", "End"))
 
 -- ===========================================================================
 -- macOS-style screenshot to clipboard
